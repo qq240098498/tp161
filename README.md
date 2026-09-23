@@ -15,6 +15,7 @@ npm start
 
 - 概览：分区、客户、运单、账单的数量与金额合计，运单状态分布，已有账期，未归属城市的运单数
 - 运单：登记与维护运单（客户、寄件城市、收件城市、实际重量、体积、件数、保价金额、附加服务、状态、创建时刻），支持按关键词、客户、状态筛选，可以只看收件城市还没归属分区的运单
+- 称重记录：同一票货的每次称重都留痕（称重时刻、来源——初次登记／现场复称／客户送检、数值），详情页按时间列出全部记录并标出当前在用的一条；计费用当前在用的重量，旧记录不会被覆盖，争议时可以把任一历史记录设回当前
 - 运单计费：对单条运单算一次费用，结果会记在这条运单上，页面上直接能看到上次算出来的数
 - 分区：维护分区编码、名称、覆盖城市与城市别名、首重与续重价格、偏远附加、启用状态
 - 客户：维护客户编码、名称、结算方式（月结／现结）、折扣、账期日
@@ -54,9 +55,13 @@ GET    /api/zones                POST /api/zones      PATCH|DELETE /api/zones/:i
 GET    /api/customers            POST /api/customers  PATCH|DELETE /api/customers/:id
 GET    /api/waybills             POST /api/waybills   PATCH|DELETE /api/waybills/:id
 POST   /api/waybills/:id/quote
+POST   /api/waybills/:id/weighings                     登记一次称重（来源：现场复称／客户送检，新记录自动成为当前在用）
+POST   /api/waybills/:id/weighings/:weighingId/activate  把某条历史称重记录设为当前在用
 GET    /api/bills                GET /api/bills/:id
 POST   /api/bills/generate       POST /api/bills/:id/void
 GET    /api/periods
 ```
 
 出账入参：`{ "period": "2026-09", "customerId": "cust-0001" }`
+
+称重入参：`{ "weightKg": 2.85, "source": "现场复称", "weighedAt": "2026-09-23 10:30" }`（`weighedAt` 可省，默认当前时刻）。注意：PATCH 运单不再接受直接改重量，重量变了要登记称重记录，直接改会返回 `WAYBILL_WEIGHT_LOCKED`。

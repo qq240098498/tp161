@@ -84,6 +84,8 @@ function createRouter() {
   router.patch('/waybills/:id', (req, res) => res.json(waybills.updateWaybill(req.params.id, req.body || {})));
   router.delete('/waybills/:id', (req, res) => res.json(waybills.removeWaybill(req.params.id)));
   router.post('/waybills/:id/quote', (req, res) => res.json(waybills.quote(req.params.id)));
+  router.post('/waybills/:id/weighings', (req, res) => res.status(201).json(waybills.addWeighing(req.params.id, req.body || {})));
+  router.post('/waybills/:id/weighings/:weighingId/activate', (req, res) => res.json(waybills.activateWeighing(req.params.id, req.params.weighingId)));
 
   router.get('/bills', (req, res) => res.json(bills.listBills(req.query || {})));
   router.get('/periods', (req, res) => res.json(bills.listPeriods()));

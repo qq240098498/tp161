@@ -1,10 +1,30 @@
 const { badRequest, notFound } = require('./errors');
-const { load, save, nextId } = require('./store');
+const { load, save, nextId, WEIGH_SOURCES } = require('./store');
 const pricing = require('./pricing');
 const zones = require('./zones');
 const { findCustomer } = require('./customers');
 
 const SERVICES = ['保价', '签收', '上门'];
+
+// 称重时刻的展示格式与 createdAt 一致
+function weighTextOf(value) {
+  return String(value || '').replace('T', ' ').slice(0, 16);
+}
+
+// 按称重时刻升序列出全部称重记录，并标出当前在用的是哪一条
+function weighingsOf(waybill) {
+  const list = Array.isArray(waybill.weighings) ? waybill.weighings.slice() : [];
+  list.sort((a, b) => String(a.weighedAt).localeCompare(String(b.weighedAt)));
+  return list.map((item) => ({
+    id: item.id,
+    weightKg: Number(item.weightKg),
+    weightText: Number(item.weightKg).toFixed(2) + ' kg',
+    source: item.source,
+    weighedAt: item.weighedAt,
+    weighedAtText: weighTextOf(item.weighedAt),
+    isActive: item.id === waybill.activeWeighingId,
+  }));
+}
 
 function decorate(waybill, data) {
   const customer = findCustomer(data, waybill.customerId);
@@ -12,6 +32,7 @@ function decorate(waybill, data) {
   const index = zones.cityIndex(data);
   const known = index.has(zones.cleanCity(waybill.toCity));
   const bill = data.bills.find((item) => item.id === waybill.billId) || null;
+  const weighings = weighingsOf(waybill);
   return Object.assign({}, waybill, {
     customerName: customer ? customer.name : '（客户已删）',
     customerCode: customer ? customer.code : '',
@@ -25,6 +46,8 @@ function decorate(waybill, data) {
     weightText: Number(waybill.weightKg).toFixed(2) + ' kg',
     volumeText: Number(waybill.volumeM3).toFixed(3) + ' m³',
     createdAtText: String(waybill.createdAt || '').replace('T', ' ').slice(0, 16),
+    weighings,
+    weighingCount: weighings.length,
   });
 }
 
@@ -99,7 +122,14 @@ function createWaybill(payload) {
   if (data.waybills.some((waybill) => waybill.code === clean.code)) {
     throw badRequest('WAYBILL_CODE_DUPLICATE', '运单号 ' + clean.code + ' 已经存在', { field: 'code' });
   }
-  const waybill = Object.assign({ id: nextId('wb', data.waybills) }, clean, { billId: null, quoteCacheYuan: null });
+  // 登记时的重量留作第一条称重记录，之后的复称、送检都往记录里追加，不再直接覆盖
+  const firstWeighing = { id: 'w-0001', weightKg: clean.weightKg, source: '初次登记', weighedAt: clean.createdAt };
+  const waybill = Object.assign({ id: nextId('wb', data.waybills) }, clean, {
+    billId: null,
+    quoteCacheYuan: null,
+    weighings: [firstWeighing],
+    activeWeighingId: firstWeighing.id,
+  });
   data.waybills.push(waybill);
   save(data);
   return decorate(waybill, load());
@@ -110,6 +140,9 @@ function updateWaybill(id, payload) {
   const current = findWaybill(data, id);
   if (!current) throw notFound('WAYBILL_NOT_FOUND', '运单不存在');
   const clean = validateWaybillPayload(payload, current);
+  if (payload && payload.weightKg !== undefined && Number(payload.weightKg) !== Number(current.weightKg)) {
+    throw badRequest('WAYBILL_WEIGHT_LOCKED', '重量不能直接改：在运单详情里登记一条称重记录（现场复称或客户送检），旧值才会留下来', { field: 'weightKg' });
+  }
   if (data.waybills.some((waybill) => waybill.id !== id && waybill.code === clean.code)) {
     throw badRequest('WAYBILL_CODE_DUPLICATE', '运单号 ' + clean.code + ' 已经存在', { field: 'code' });
   }
@@ -117,6 +150,47 @@ function updateWaybill(id, payload) {
   Object.assign(current, clean);
   save(data);
   return decorate(current, load());
+}
+
+// 登记一次称重（现场复称 / 客户送检）：新记录自动成为当前在用的重量，旧记录全部保留
+function addWeighing(id, payload) {
+  const data = load();
+  const waybill = findWaybill(data, id);
+  if (!waybill) throw notFound('WAYBILL_NOT_FOUND', '运单不存在');
+  const body = payload || {};
+  const weightKg = Number(body.weightKg);
+  if (!(weightKg > 0)) throw badRequest('WEIGHING_WEIGHT_INVALID', '称重数值必须是大于 0 的数字', { field: 'weightKg' });
+  const source = String(body.source || '').trim();
+  const allowed = WEIGH_SOURCES.filter((item) => item !== '初次登记');
+  if (!allowed.includes(source)) {
+    throw badRequest('WEIGHING_SOURCE_INVALID', '称重来源只能是：' + allowed.join('、'), { field: 'source' });
+  }
+  let weighedAt = String(body.weighedAt || '').trim();
+  if (!weighedAt) {
+    weighedAt = new Date().toISOString();
+  } else if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}/.test(weighedAt)) {
+    throw badRequest('WEIGHING_TIME_INVALID', '称重时刻要形如 2026-09-01 10:30', { field: 'weighedAt' });
+  }
+  if (!Array.isArray(waybill.weighings)) waybill.weighings = [];
+  const record = { id: nextId('w', waybill.weighings), weightKg, source, weighedAt };
+  waybill.weighings.push(record);
+  waybill.activeWeighingId = record.id;
+  waybill.weightKg = record.weightKg;
+  save(data);
+  return decorate(waybill, load());
+}
+
+// 把某一条历史称重记录设为当前在用（争议时改回旧值用）
+function activateWeighing(id, weighingId) {
+  const data = load();
+  const waybill = findWaybill(data, id);
+  if (!waybill) throw notFound('WAYBILL_NOT_FOUND', '运单不存在');
+  const record = (Array.isArray(waybill.weighings) ? waybill.weighings : []).find((item) => item.id === weighingId);
+  if (!record) throw notFound('WEIGHING_NOT_FOUND', '这条称重记录不存在');
+  waybill.activeWeighingId = record.id;
+  waybill.weightKg = record.weightKg;
+  save(data);
+  return decorate(waybill, load());
 }
 
 function removeWaybill(id) {
@@ -150,8 +224,11 @@ module.exports = {
   findWaybill,
   createWaybill,
   updateWaybill,
+  addWeighing,
+  activateWeighing,
   removeWaybill,
   quote,
   decorate,
   SERVICES,
+  WEIGH_SOURCES,
 };

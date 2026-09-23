@@ -29,6 +29,34 @@ function emptyData() {
   };
 }
 
+const WEIGH_SOURCES = ['初次登记', '现场复称', '客户送检'];
+
+// 老数据只有 weightKg 一个数：补出一条「初次登记」称重记录，并保证 weightKg 始终等于当前在用记录的数值
+function migrateWeighings(waybill) {
+  if (!Array.isArray(waybill.weighings)) waybill.weighings = [];
+  waybill.weighings = waybill.weighings.filter((item) => item && Number(item.weightKg) > 0);
+  waybill.weighings.forEach((item, index) => {
+    item.weightKg = Number(item.weightKg);
+    if (!item.id) item.id = 'w-' + String(index + 1).padStart(4, '0');
+    if (!WEIGH_SOURCES.includes(item.source)) item.source = '初次登记';
+    if (!item.weighedAt) item.weighedAt = waybill.createdAt || '';
+  });
+  if (waybill.weighings.length === 0 && Number(waybill.weightKg) > 0) {
+    waybill.weighings.push({
+      id: 'w-0001',
+      weightKg: Number(waybill.weightKg),
+      source: '初次登记',
+      weighedAt: waybill.createdAt || '',
+    });
+  }
+  const active = waybill.weighings.find((item) => item.id === waybill.activeWeighingId);
+  if (!active && waybill.weighings.length > 0) {
+    waybill.activeWeighingId = waybill.weighings[waybill.weighings.length - 1].id;
+  }
+  const current = waybill.weighings.find((item) => item.id === waybill.activeWeighingId);
+  if (current) waybill.weightKg = current.weightKg;
+}
+
 function normalize(raw) {
   const base = emptyData();
   const data = raw && typeof raw === 'object' ? raw : {};
@@ -46,6 +74,7 @@ function normalize(raw) {
   });
   out.waybills.forEach((waybill) => {
     if (!Array.isArray(waybill.services)) waybill.services = [];
+    migrateWeighings(waybill);
   });
   out.bills.forEach((bill) => {
     if (!Array.isArray(bill.waybillIds)) bill.waybillIds = [];
@@ -91,4 +120,4 @@ function nextId(prefix, list) {
   return prefix + '-' + String(max + 1).padStart(4, '0');
 }
 
-module.exports = { load, save, normalize, nextId, dataFile, DEFAULT_SETTINGS };
+module.exports = { load, save, normalize, nextId, dataFile, DEFAULT_SETTINGS, WEIGH_SOURCES };

@@ -2,7 +2,7 @@
   "meta": {
     "name": "运单计费与账单核对台",
     "currency": "CNY",
-    "updatedAt": "2026-09-22T12:48:30.802Z"
+    "updatedAt": "2026-09-23T14:08:32.916Z"
   },
   "settings": {
     "volumetricDivisor": 6000,
@@ -138,7 +138,16 @@
       "status": "已签收",
       "createdAt": "2026-08-03T10:20:00+08:00",
       "billId": "bill-0004",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 3.2,
+          "source": "初次登记",
+          "weighedAt": "2026-08-03T10:20:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0002",
@@ -154,7 +163,16 @@
       "status": "已签收",
       "createdAt": "2026-08-05T09:15:00+08:00",
       "billId": "bill-0004",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 2.4,
+          "source": "初次登记",
+          "weighedAt": "2026-08-05T09:15:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0003",
@@ -172,7 +190,16 @@
       "status": "已签收",
       "createdAt": "2026-08-07T14:40:00+08:00",
       "billId": "bill-0004",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 18.4,
+          "source": "初次登记",
+          "weighedAt": "2026-08-07T14:40:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0004",
@@ -190,7 +217,16 @@
       "status": "已签收",
       "createdAt": "2026-08-11T11:05:00+08:00",
       "billId": "bill-0004",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 1.2,
+          "source": "初次登记",
+          "weighedAt": "2026-08-11T11:05:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0005",
@@ -208,7 +244,16 @@
       "status": "已签收",
       "createdAt": "2026-08-12T15:30:00+08:00",
       "billId": "bill-0004",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 1.2,
+          "source": "初次登记",
+          "weighedAt": "2026-08-12T15:30:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0006",
@@ -226,7 +271,16 @@
       "status": "已签收",
       "createdAt": "2026-08-13T16:45:00+08:00",
       "billId": "bill-0004",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 1.2,
+          "source": "初次登记",
+          "weighedAt": "2026-08-13T16:45:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0007",
@@ -242,7 +296,16 @@
       "status": "已签收",
       "createdAt": "2026-08-20T08:50:00+08:00",
       "billId": "bill-0004",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 32.4,
+          "source": "初次登记",
+          "weighedAt": "2026-08-20T08:50:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0008",
@@ -258,7 +321,16 @@
       "status": "已签收",
       "createdAt": "2026-09-01T02:30:00+08:00",
       "billId": "bill-0004",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 5.5,
+          "source": "初次登记",
+          "weighedAt": "2026-09-01T02:30:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0009",
@@ -274,7 +346,16 @@
       "status": "已签收",
       "createdAt": "2026-07-05T09:00:00+08:00",
       "billId": "bill-0001",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 2.1,
+          "source": "初次登记",
+          "weighedAt": "2026-07-05T09:00:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0010",
@@ -290,7 +371,16 @@
       "status": "已签收",
       "createdAt": "2026-07-12T10:30:00+08:00",
       "billId": "bill-0001",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 3.4,
+          "source": "初次登记",
+          "weighedAt": "2026-07-12T10:30:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0011",
@@ -306,7 +396,16 @@
       "status": "已签收",
       "createdAt": "2026-07-20T13:20:00+08:00",
       "billId": "bill-0001",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 8.2,
+          "source": "初次登记",
+          "weighedAt": "2026-07-20T13:20:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0012",
@@ -322,7 +421,16 @@
       "status": "已签收",
       "createdAt": "2026-07-28T17:10:00+08:00",
       "billId": "bill-0001",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 1.6,
+          "source": "初次登记",
+          "weighedAt": "2026-07-28T17:10:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0013",
@@ -338,7 +446,16 @@
       "status": "已签收",
       "createdAt": "2026-08-04T09:40:00+08:00",
       "billId": "bill-0003",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 4.8,
+          "source": "初次登记",
+          "weighedAt": "2026-08-04T09:40:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0014",
@@ -355,7 +472,16 @@
       "createdAt": "2026-08-09T11:25:00+08:00",
       "billId": "bill-0003",
       "quoteCacheYuan": 21.56,
-      "quoteCachedAt": "2026-09-22T12:48:30.711Z"
+      "quoteCachedAt": "2026-09-22T12:48:30.711Z",
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 6.2,
+          "source": "初次登记",
+          "weighedAt": "2026-08-09T11:25:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0015",
@@ -373,7 +499,16 @@
       "status": "已签收",
       "createdAt": "2026-08-15T15:00:00+08:00",
       "billId": "bill-0003",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 9.6,
+          "source": "初次登记",
+          "weighedAt": "2026-08-15T15:00:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0016",
@@ -389,7 +524,16 @@
       "status": "已签收",
       "createdAt": "2026-08-22T16:20:00+08:00",
       "billId": "bill-0003",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 2.8,
+          "source": "初次登记",
+          "weighedAt": "2026-08-22T16:20:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0017",
@@ -405,7 +549,16 @@
       "status": "已签收",
       "createdAt": "2026-08-26T10:10:00+08:00",
       "billId": "bill-0003",
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 14.2,
+          "source": "初次登记",
+          "weighedAt": "2026-08-26T10:10:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0018",
@@ -421,7 +574,16 @@
       "status": "已签收",
       "createdAt": "2026-09-02T09:30:00+08:00",
       "billId": null,
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 1.4,
+          "source": "初次登记",
+          "weighedAt": "2026-09-02T09:30:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0019",
@@ -437,7 +599,16 @@
       "status": "在途",
       "createdAt": "2026-09-05T14:15:00+08:00",
       "billId": null,
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 2.6,
+          "source": "初次登记",
+          "weighedAt": "2026-09-05T14:15:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0020",
@@ -453,7 +624,16 @@
       "status": "待发",
       "createdAt": "2026-09-08T08:40:00+08:00",
       "billId": null,
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 3.8,
+          "source": "初次登记",
+          "weighedAt": "2026-09-08T08:40:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0021",
@@ -472,7 +652,16 @@
       "status": "已签收",
       "createdAt": "2026-09-03T11:50:00+08:00",
       "billId": null,
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 18.5,
+          "source": "初次登记",
+          "weighedAt": "2026-09-03T11:50:00+08:00"
+        }
+      ],
+      "activeWeighingId": "w-0001"
     },
     {
       "id": "wb-0022",
@@ -480,7 +669,7 @@
       "customerId": "cust-0004",
       "fromCity": "远山",
       "toCity": "高岭",
-      "weightKg": 7.4,
+      "weightKg": 123,
       "volumeM3": 0.019,
       "pieces": 1,
       "insuredAmountYuan": 0,
@@ -488,7 +677,22 @@
       "status": "待发",
       "createdAt": "2026-09-10T09:05:00+08:00",
       "billId": null,
-      "quoteCacheYuan": null
+      "quoteCacheYuan": null,
+      "weighings": [
+        {
+          "id": "w-0001",
+          "weightKg": 7.4,
+          "source": "初次登记",
+          "weighedAt": "2026-09-10T09:05:00+08:00"
+        },
+        {
+          "id": "w-0002",
+          "weightKg": 123,
+          "source": "现场复称",
+          "weighedAt": "2026-09-23 22:08"
+        }
+      ],
+      "activeWeighingId": "w-0002"
     }
   ],
   "bills": [

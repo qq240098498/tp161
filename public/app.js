@@ -10,6 +10,7 @@
     code: '编码/运单号', name: '名称', status: '状态', customerId: '客户',
     fromCity: '寄件城市', toCity: '收件城市', weightKg: '实际重量', volumeM3: '体积',
     pieces: '件数', insuredAmountYuan: '保价金额', services: '附加服务', createdAt: '创建时刻',
+    source: '称重来源', weighedAt: '称重时刻',
     cities: '覆盖城市', aliases: '城市别名', settle: '结算方式', discountPermille: '折扣',
     periodDay: '账期日', period: '账期', firstWeightKg: '首重公斤', firstPriceYuan: '首重价',
     addUnitKg: '续重单位', addPriceYuan: '续重价', remoteFeeYuan: '偏远附加', billId: '账单'
@@ -419,6 +420,7 @@
         '<div class="card-tags">' +
         '<span class="tag">分区 ' + esc(item.zoneName) + '</span>' +
         '<span class="tag' + (item.locked ? ' tag-lock' : '') + '">' + (item.locked ? ('已入账 ' + esc(item.billCode)) : '未入账') + '</span>' +
+        (Number(item.weighingCount) > 1 ? '<span class="tag tag-amber">称重 ' + esc(num(item.weighingCount)) + ' 次</span>' : '') +
         '<span class="tag' + (cached > 0 ? ' tag-amber' : '') + '">上次计费 ' + (cached > 0 ? esc(money(cached)) : '未计费') + '</span>' +
         '</div>' +
         '</article>';
@@ -455,8 +457,8 @@
       '<input type="text" data-field="toCity" value="' + attr(v.toCity || '') + '"><span class="field-msg"></span></label>' +
       '</div>' +
       '<div class="field-grid">' +
-      '<label class="field" data-field-wrap="weightKg"><span class="field-label">实际重量（kg）</span>' +
-      '<input type="number" step="0.01" min="0" data-field="weightKg" value="' + attr(v.weightKg === undefined || v.weightKg === null ? '' : v.weightKg) + '"><span class="field-msg"></span></label>' +
+      '<label class="field" data-field-wrap="weightKg"><span class="field-label">实际重量（kg）' + (isEdit ? '· 只能登记称重记录来改' : '') + '</span>' +
+      '<input type="number" step="0.01" min="0" data-field="weightKg"' + (isEdit ? ' disabled' : '') + ' value="' + attr(v.weightKg === undefined || v.weightKg === null ? '' : v.weightKg) + '"><span class="field-msg"></span></label>' +
       '<label class="field" data-field-wrap="volumeM3"><span class="field-label">体积（m³）</span>' +
       '<input type="number" step="0.001" min="0" data-field="volumeM3" value="' + attr(v.volumeM3 === undefined || v.volumeM3 === null ? '' : v.volumeM3) + '"><span class="field-msg"></span></label>' +
       '</div>' +
@@ -478,8 +480,43 @@
       '<button type="button" class="btn btn-primary" data-action="save-waybill">' + (isEdit ? '保存修改' : '创建运单') + '</button>' +
       '<button type="button" class="btn btn-ghost" data-action="cancel-waybill-form">取消</button>' +
       '</div>' +
-      '<p class="foot-note">选了「保价」就要填大于 0 的保价金额；账期按创建时刻所在月份归集。</p>' +
+      '<p class="foot-note">选了「保价」就要填大于 0 的保价金额；账期按创建时刻所在月份归集。' +
+      (isEdit ? '实际重量在这里改不了：要改重量请回到详情页，在「称重记录」里登记现场复称或客户送检的结果，旧值会留在记录里。' : '登记时的重量会留作第一条称重记录（初次登记）。') + '</p>' +
       '</form>';
+  }
+
+  // 称重记录：按时间列出这条运单的全部称重结果，标出当前在用的是哪一次
+  function weighingsBlockHtml(item) {
+    var list = Array.isArray(item.weighings) ? item.weighings : [];
+    var rows = list.map(function (w) {
+      return '<tr>' +
+        '<td>' + esc(w.weighedAtText || timeTextOf(w.weighedAt)) + '</td>' +
+        '<td><span class="tag">' + esc(w.source) + '</span></td>' +
+        '<td class="num">' + esc(w.weightText || kg(w.weightKg)) + '</td>' +
+        '<td>' + (w.isActive
+          ? '<span class="tag tag-lock">当前在用</span>'
+          : '<button type="button" class="btn btn-ghost" data-action="activate-weighing" data-id="' + attr(item.id) + '" data-wid="' + attr(w.id) + '">设为当前</button>') + '</td>' +
+        '</tr>';
+    }).join('');
+    var table = rows
+      ? '<div class="table-wrap"><table><thead><tr>' +
+        '<th>称重时刻</th><th>来源</th><th class="num">数值</th><th>在用情况</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table></div>'
+      : '<p class="block-hint">还没有称重记录。</p>';
+    return '<div class="block"><h3 class="block-title">称重记录（' + esc(num(list.length)) + ' 次）</h3>' +
+      '<p class="block-hint">计费用的是「当前在用」那一条的数值；登记新记录会自动成为当前在用，旧记录都留在下面。</p>' +
+      table +
+      '<div class="panel"><h4 class="panel-title">登记一次称重</h4>' +
+      '<div class="field-grid">' +
+      '<label class="field" data-field-wrap="weightKg"><span class="field-label">称重数值（kg）</span>' +
+      '<input type="number" step="0.01" min="0" id="weighValue" placeholder="例如 2.85"><span class="field-msg"></span></label>' +
+      '<label class="field" data-field-wrap="source"><span class="field-label">来源</span>' +
+      '<select id="weighSource"><option value="现场复称">现场复称</option><option value="客户送检">客户送检</option></select><span class="field-msg"></span></label>' +
+      '</div>' +
+      '<label class="field" data-field-wrap="weighedAt"><span class="field-label">称重时刻</span>' +
+      '<input type="text" id="weighedAt" placeholder="2026-09-01 10:30" value="' + attr(nowText()) + '"><span class="field-msg"></span></label>' +
+      '<button type="button" class="btn btn-primary btn-block" data-action="add-weighing">登记称重</button>' +
+      '</div></div>';
   }
 
   function renderWaybillsRight() {
@@ -524,7 +561,7 @@
       '<dt>结算方式</dt><dd>' + esc(item.settle || '-') + '</dd>' +
       '<dt>寄件城市</dt><dd>' + esc(item.fromCity) + '</dd>' +
       '<dt>收件城市</dt><dd>' + esc(item.toCity) + '</dd>' +
-      '<dt>实际重量</dt><dd>' + esc(item.weightText || kg(item.weightKg)) + '</dd>' +
+      '<dt>实际重量</dt><dd>' + esc(item.weightText || kg(item.weightKg)) + (Number(item.weighingCount) > 1 ? '（当前在用 · 共 ' + esc(num(item.weighingCount)) + ' 次称重，见下方记录）' : '') + '</dd>' +
       '<dt>体积</dt><dd>' + esc(item.volumeText || m3(item.volumeM3)) + '</dd>' +
       '<dt>件数</dt><dd>' + esc(num(item.pieces)) + ' 件</dd>' +
       '<dt>保价金额</dt><dd>' + esc(money(item.insuredAmountYuan)) + ' 元</dd>' +
@@ -534,6 +571,7 @@
       '<dt>入账情况</dt><dd class="' + (item.locked ? 'is-amber' : '') + '">' + (item.locked ? ('已入账：' + esc(item.billCode) + '（' + esc(item.billStatus) + '）') : '未入账') + '</dd>' +
       '<dt>上次计费</dt><dd class="' + (cached > 0 ? 'is-amber' : '') + '">' + (cached > 0 ? (esc(money(cached)) + ' 元（' + esc(timeTextOf(item.quoteCachedAt)) + '）') : '未计费') + '</dd>' +
       '</dl>' +
+      weighingsBlockHtml(item) +
       quoteHtml +
       '<div class="btn-stack">' +
       '<button type="button" class="btn btn-primary" data-action="quote-waybill" data-id="' + attr(item.id) + '">单条计费</button>' +
@@ -623,6 +661,43 @@
       await refreshAll();
       render();
       ok('运单 ' + result.waybill.code + ' 计费完成：计费重量 ' + money(result.billableKg) + ' kg，合计 ' + money(result.totalYuan) + ' 元');
+    } catch (err) {
+      fail(err);
+    }
+  }
+
+  async function addWeighing() {
+    var id = state.selectedWaybillId;
+    var valueEl = document.getElementById('weighValue');
+    var sourceEl = document.getElementById('weighSource');
+    var atEl = document.getElementById('weighedAt');
+    if (!id || !valueEl || !sourceEl || !atEl) return;
+    clearFieldErrors();
+    var payload = {
+      weightKg: Number(String(valueEl.value).trim()),
+      source: String(sourceEl.value).trim(),
+      weighedAt: String(atEl.value).trim()
+    };
+    try {
+      var saved = await api('POST', '/api/waybills/' + encodeURIComponent(id) + '/weighings', payload);
+      state.quote = null;
+      await refreshAll();
+      render();
+      var active = (saved.weighings || []).filter(function (w) { return w.isActive; })[0];
+      ok('运单 ' + saved.code + ' 已登记 ' + (active ? (active.weightText + '（' + active.source + '）') : '称重') +
+        '，当前在用重量已更新，共 ' + num(saved.weighingCount) + ' 次称重记录');
+    } catch (err) {
+      fail(err);
+    }
+  }
+
+  async function activateWeighing(id, weighingId) {
+    try {
+      var saved = await api('POST', '/api/waybills/' + encodeURIComponent(id) + '/weighings/' + encodeURIComponent(weighingId) + '/activate');
+      state.quote = null;
+      await refreshAll();
+      render();
+      ok('运单 ' + saved.code + ' 当前在用的重量已切换为 ' + saved.weightText);
     } catch (err) {
       fail(err);
     }
@@ -1414,6 +1489,8 @@
         }
         break;
       case 'quote-waybill': await quoteWaybill(id || state.selectedWaybillId); break;
+      case 'add-weighing': await addWeighing(); break;
+      case 'activate-weighing': await activateWeighing(id, target.getAttribute('data-wid') || ''); break;
 
       case 'new-zone':
         state.zoneMode = 'create';
