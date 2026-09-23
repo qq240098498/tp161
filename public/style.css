@@ -525,6 +525,8 @@ thead th {
 tbody td { padding: 7px 8px; border-bottom: 1px solid var(--line); color: var(--ink-2); }
 tbody tr:last-child td { border-bottom: none; }
 tbody tr:hover td { background: var(--slate-soft); }
+tbody tr.weighing-current td { background: var(--amber-soft); }
+tbody tr.weighing-current:hover td { background: var(--amber-soft); }
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tfoot-row td { background: var(--slate-soft); font-weight: 700; color: var(--brand-deep); border-top: 1px solid var(--line-strong); }
 

@@ -15,6 +15,7 @@ npm start
 
 - 概览：分区、客户、运单、账单的数量与金额合计，运单状态分布，已有账期，未归属城市的运单数
 - 运单：登记与维护运单（客户、寄件城市、收件城市、实际重量、体积、件数、保价金额、附加服务、状态、创建时刻），支持按关键词、客户、状态筛选，可以只看收件城市还没归属分区的运单
+- 运单称重：同一票货的每次称重都保留（初次登记 / 现场复称 / 客户送检），记录称重时刻、来源与数值，详情页按时间列出全部结果并标明当前在用的是哪一次；新称重补录后自动成为当前重量，进账单后随账单冻结
 - 运单计费：对单条运单算一次费用，结果会记在这条运单上，页面上直接能看到上次算出来的数
 - 分区：维护分区编码、名称、覆盖城市与城市别名、首重与续重价格、偏远附加、启用状态
 - 客户：维护客户编码、名称、结算方式（月结／现结）、折扣、账期日
@@ -53,6 +54,7 @@ GET    /api/settings             PATCH /api/settings
 GET    /api/zones                POST /api/zones      PATCH|DELETE /api/zones/:id
 GET    /api/customers            POST /api/customers  PATCH|DELETE /api/customers/:id
 GET    /api/waybills             POST /api/waybills   PATCH|DELETE /api/waybills/:id
+POST   /api/waybills/:id/weighings
 POST   /api/waybills/:id/quote
 GET    /api/bills                GET /api/bills/:id
 POST   /api/bills/generate       POST /api/bills/:id/void
@@ -60,3 +62,12 @@ GET    /api/periods
 ```
 
 出账入参：`{ "period": "2026-09", "customerId": "cust-0001" }`
+
+## 称重记录
+
+运单上的重量不允许直接覆盖。运单结构里：
+
+- `weighings[]`：每次称重一条，字段为 `id`、`at`（称重时刻）、`source`（`初次登记` / `现场复称` / `客户送检`）、`weightKg`
+- `currentWeighingId`：当前在用的是哪一次；`weightKg` 始终与该次保持一致，计费与出账都按它走
+- 新建运单时表单里的重量自动落成第一条「初次登记」；之后用 `POST /api/waybills/:id/weighings` 补录（`source` 只能是现场复称或客户送检），最新一次自动设为当前在用
+- 运单进账单后称重记录冻结，不能再补录；旧数据文件里只有单个重量的运单，启动时自动迁成一条「初次登记」

@@ -12,7 +12,8 @@
     pieces: '件数', insuredAmountYuan: '保价金额', services: '附加服务', createdAt: '创建时刻',
     cities: '覆盖城市', aliases: '城市别名', settle: '结算方式', discountPermille: '折扣',
     periodDay: '账期日', period: '账期', firstWeightKg: '首重公斤', firstPriceYuan: '首重价',
-    addUnitKg: '续重单位', addPriceYuan: '续重价', remoteFeeYuan: '偏远附加', billId: '账单'
+    addUnitKg: '续重单位', addPriceYuan: '续重价', remoteFeeYuan: '偏远附加', billId: '账单',
+    weighingSource: '称重来源', weighingWeightKg: '称重量', weighingAt: '称重时刻'
   };
 
   /* ================= 状态 ================= */
@@ -29,6 +30,7 @@
     customerFilter: { keyword: '', settle: '', status: '' },
     selectedWaybillId: '',
     waybillMode: 'view',      // view | create | edit
+    weighFormVisible: false, // 运单详情里是否展开「补录一次称重」表单
     selectedZoneId: '',
     zoneMode: 'view',
     selectedCustomerId: '',
@@ -412,12 +414,13 @@
         '<div class="card-route"><span>' + esc(item.fromCity) + '</span><span class="arrow">→</span><span>' + esc(item.toCity) + '</span>' +
         (item.zoneKnown ? '' : '<span class="tag tag-warn">未归属</span>') + '</div>' +
         '<div class="card-metrics">' +
-        '<div class="card-metric">实际重量<b>' + esc(item.weightText || kg(item.weightKg)) + '</b></div>' +
+        '<div class="card-metric">当前重量<b>' + esc(item.weightText || kg(item.weightKg)) + '</b></div>' +
         '<div class="card-metric">体积<b>' + esc(item.volumeText || m3(item.volumeM3)) + '</b></div>' +
         '<div class="card-metric">件数<b>' + esc(num(item.pieces)) + ' 件</b></div>' +
         '</div>' +
         '<div class="card-tags">' +
         '<span class="tag">分区 ' + esc(item.zoneName) + '</span>' +
+        '<span class="tag' + (item.weighingCount > 1 ? ' tag-amber' : '') + '">称重 ' + esc(item.currentWeighingSource || '初次登记') + (item.weighingCount > 1 ? ' · 共 ' + num(item.weighingCount) + ' 次' : '') + '</span>' +
         '<span class="tag' + (item.locked ? ' tag-lock' : '') + '">' + (item.locked ? ('已入账 ' + esc(item.billCode)) : '未入账') + '</span>' +
         '<span class="tag' + (cached > 0 ? ' tag-amber' : '') + '">上次计费 ' + (cached > 0 ? esc(money(cached)) : '未计费') + '</span>' +
         '</div>' +
@@ -455,8 +458,9 @@
       '<input type="text" data-field="toCity" value="' + attr(v.toCity || '') + '"><span class="field-msg"></span></label>' +
       '</div>' +
       '<div class="field-grid">' +
-      '<label class="field" data-field-wrap="weightKg"><span class="field-label">实际重量（kg）</span>' +
-      '<input type="number" step="0.01" min="0" data-field="weightKg" value="' + attr(v.weightKg === undefined || v.weightKg === null ? '' : v.weightKg) + '"><span class="field-msg"></span></label>' +
+      '<label class="field" data-field-wrap="weightKg"><span class="field-label">当前重量（kg）</span>' +
+      '<input type="number" step="0.01" min="0" data-field="weightKg" readonly tabindex="-1" value="' + attr(v.weightKg === undefined || v.weightKg === null ? '' : v.weightKg) + '">' +
+      (isEdit ? '<span class="field-msg">重量不能直接改：详情页用「补录一次称重」记录现场复称或客户送检的结果。</span>' : '<span class="field-msg"></span>') + '</label>' +
       '<label class="field" data-field-wrap="volumeM3"><span class="field-label">体积（m³）</span>' +
       '<input type="number" step="0.001" min="0" data-field="volumeM3" value="' + attr(v.volumeM3 === undefined || v.volumeM3 === null ? '' : v.volumeM3) + '"><span class="field-msg"></span></label>' +
       '</div>' +
@@ -479,6 +483,52 @@
       '<button type="button" class="btn btn-ghost" data-action="cancel-waybill-form">取消</button>' +
       '</div>' +
       '<p class="foot-note">选了「保价」就要填大于 0 的保价金额；账期按创建时刻所在月份归集。</p>' +
+      '</form>';
+  }
+
+  // 同一票货的全部称重结果，按时间倒序；当前在用的那次标出来
+  function weighingHistoryHtml(item) {
+    var list = item.weighings || [];
+    if (!list.length) return '';
+    var rows = list.map(function (w) {
+      return '<tr' + (w.isCurrent ? ' class="weighing-current"' : '') + '>' +
+        '<td>' + esc(w.atText || '—') + '</td>' +
+        '<td>' + esc(w.source) + '</td>' +
+        '<td class="num">' + esc(w.weightText) + '</td>' +
+        '<td>' + (w.isCurrent ? '<span class="tag tag-amber">当前在用</span>' : '—') + '</td>' +
+        '</tr>';
+    }).join('');
+    return '<div class="block"><h3 class="block-title">称重记录（共 ' + num(list.length) + ' 次）</h3>' +
+      '<p class="block-hint">初次登记之后再发现重量不一样，不要改老记录，用「补录一次称重」加一条；最新一次自动作为当前在用重量。</p>' +
+      '<div class="table-wrap"><table><thead><tr>' +
+      '<th>称重时刻</th><th>来源</th><th class="num">重量</th><th>状态</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+  }
+
+  function weighingFormHtml(item) {
+    if (!state.weighFormVisible) {
+      return item.locked
+        ? '<p class="foot-note">这条运单已经进账单，称重结果随账单冻结，不能再补录。</p>'
+        : '<div class="btn-stack"><button type="button" class="btn btn-amber" data-action="show-weigh-form" data-id="' + attr(item.id) + '">补录一次称重（现场复称 / 客户送检）</button></div>';
+    }
+    if (item.locked) return '';
+    var sourceOptions = ['现场复称', '客户送检'].map(function (s) {
+      return '<option value="' + attr(s) + '">' + esc(s) + '</option>';
+    }).join('');
+    return '<form id="weighingForm" autocomplete="off" onsubmit="return false;">' +
+      '<div class="block"><h3 class="block-title">补录一次称重</h3>' +
+      '<label class="field" data-field-wrap="weighingWeightKg"><span class="field-label">称重量（kg）</span>' +
+      '<input type="number" step="0.01" min="0" data-field="weighingWeightKg" placeholder="例如 12.50" value=""><span class="field-msg"></span></label>' +
+      '<label class="field" data-field-wrap="weighingSource"><span class="field-label">来源</span>' +
+      '<select data-field="weighingSource">' + sourceOptions + '</select><span class="field-msg"></span></label>' +
+      '<label class="field" data-field-wrap="weighingAt"><span class="field-label">称重时刻</span>' +
+      '<input type="text" data-field="weighingAt" placeholder="2026-09-23 10:30" value="' + attr(nowText()) + '"><span class="field-msg"></span></label>' +
+      '</div>' +
+      '<div class="btn-row">' +
+      '<button type="button" class="btn btn-primary" data-action="save-weighing" data-id="' + attr(item.id) + '">保存这次称重</button>' +
+      '<button type="button" class="btn btn-ghost" data-action="cancel-weighing">取消</button>' +
+      '</div>' +
+      '<p class="foot-note">保存后会新增加一条称重记录，并把它设为当前在用重量；之前每次称重的数值都会保留。</p>' +
       '</form>';
   }
 
@@ -524,7 +574,8 @@
       '<dt>结算方式</dt><dd>' + esc(item.settle || '-') + '</dd>' +
       '<dt>寄件城市</dt><dd>' + esc(item.fromCity) + '</dd>' +
       '<dt>收件城市</dt><dd>' + esc(item.toCity) + '</dd>' +
-      '<dt>实际重量</dt><dd>' + esc(item.weightText || kg(item.weightKg)) + '</dd>' +
+      '<dt>当前重量</dt><dd>' + esc(item.weightText || kg(item.weightKg)) +
+      '（' + esc(item.currentWeighingSource || '初次登记') + (item.currentWeighingAtText ? ' · ' + esc(item.currentWeighingAtText) : '') + '）</dd>' +
       '<dt>体积</dt><dd>' + esc(item.volumeText || m3(item.volumeM3)) + '</dd>' +
       '<dt>件数</dt><dd>' + esc(num(item.pieces)) + ' 件</dd>' +
       '<dt>保价金额</dt><dd>' + esc(money(item.insuredAmountYuan)) + ' 元</dd>' +
@@ -535,6 +586,8 @@
       '<dt>上次计费</dt><dd class="' + (cached > 0 ? 'is-amber' : '') + '">' + (cached > 0 ? (esc(money(cached)) + ' 元（' + esc(timeTextOf(item.quoteCachedAt)) + '）') : '未计费') + '</dd>' +
       '</dl>' +
       quoteHtml +
+      weighingHistoryHtml(item) +
+      weighingFormHtml(item) +
       '<div class="btn-stack">' +
       '<button type="button" class="btn btn-primary" data-action="quote-waybill" data-id="' + attr(item.id) + '">单条计费</button>' +
       '<button type="button" class="btn" data-action="edit-waybill" data-id="' + attr(item.id) + '">编辑这条运单</button>' +
@@ -576,6 +629,7 @@
     if (state.selectedWaybillId !== id) state.quote = null;
     state.selectedWaybillId = id;
     state.waybillMode = 'view';
+    state.weighFormVisible = false;
     state.confirm = null;
     renderMid();
     renderRight();
@@ -592,6 +646,7 @@
         : await api('POST', '/api/waybills', payload);
       state.selectedWaybillId = saved.id;
       state.waybillMode = 'view';
+      state.weighFormVisible = false;
       state.quote = null;
       state.confirm = null;
       await refreshAll();
@@ -605,7 +660,7 @@
   async function deleteWaybill(id) {
     try {
       await api('DELETE', '/api/waybills/' + encodeURIComponent(id));
-      if (state.selectedWaybillId === id) { state.selectedWaybillId = ''; state.quote = null; }
+      if (state.selectedWaybillId === id) { state.selectedWaybillId = ''; state.quote = null; state.weighFormVisible = false; }
       state.confirm = null;
       await refreshAll();
       render();
@@ -623,6 +678,31 @@
       await refreshAll();
       render();
       ok('运单 ' + result.waybill.code + ' 计费完成：计费重量 ' + money(result.billableKg) + ' kg，合计 ' + money(result.totalYuan) + ' 元');
+    } catch (err) {
+      fail(err);
+    }
+  }
+
+  function readWeighingForm() {
+    var form = document.getElementById('weighingForm');
+    if (!form) return null;
+    function val(name) {
+      var el = form.querySelector('[data-field="' + name + '"]');
+      return el ? String(el.value).trim() : '';
+    }
+    return { weightKg: Number(val('weighingWeightKg')), source: val('weighingSource'), at: val('weighingAt') };
+  }
+
+  async function saveWeighing(id) {
+    var payload = readWeighingForm();
+    if (!payload) return;
+    try {
+      var saved = await api('POST', '/api/waybills/' + encodeURIComponent(id) + '/weighings', payload);
+      state.weighFormVisible = false;
+      state.quote = null;
+      await refreshAll();
+      render();
+      ok('已为运单 ' + saved.code + ' 补录一次称重，当前在用：' + saved.weightText + '（' + saved.currentWeighingSource + '）');
     } catch (err) {
       fail(err);
     }
@@ -1381,6 +1461,7 @@
         state.waybillMode = 'create';
         state.selectedWaybillId = '';
         state.quote = null;
+        state.weighFormVisible = false;
         clearNotice();
         clearFieldErrors();
         renderMid();
@@ -1391,6 +1472,7 @@
       case 'edit-waybill':
         state.selectedWaybillId = id;
         state.waybillMode = 'edit';
+        state.weighFormVisible = false;
         clearNotice();
         clearFieldErrors();
         renderRight();
@@ -1414,6 +1496,20 @@
         }
         break;
       case 'quote-waybill': await quoteWaybill(id || state.selectedWaybillId); break;
+      case 'show-weigh-form':
+        state.weighFormVisible = true;
+        clearNotice();
+        clearFieldErrors();
+        renderRight();
+        setStatus('补录一次称重：填重量、来源与称重时刻，保存后老记录仍然保留');
+        break;
+      case 'cancel-weighing':
+        state.weighFormVisible = false;
+        clearNotice();
+        clearFieldErrors();
+        renderRight();
+        break;
+      case 'save-weighing': await saveWeighing(id || state.selectedWaybillId); break;
 
       case 'new-zone':
         state.zoneMode = 'create';

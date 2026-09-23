@@ -46,6 +46,30 @@ function normalize(raw) {
   });
   out.waybills.forEach((waybill) => {
     if (!Array.isArray(waybill.services)) waybill.services = [];
+    // 称重历史：老数据只有 weightKg 一个数，迁成一条「初次登记」记录
+    if (!Array.isArray(waybill.weighings)) {
+      waybill.weighings = [];
+      const legacyWeight = Number(waybill.weightKg);
+      if (legacyWeight > 0) {
+        waybill.weighings.push({
+          id: 'w-0001',
+          at: waybill.createdAt || null,
+          source: '初次登记',
+          weightKg: legacyWeight,
+        });
+      }
+    }
+    waybill.weighings.forEach((weighing, index) => {
+      if (!weighing.id) weighing.id = 'w-' + String(index + 1).padStart(4, '0');
+      weighing.source = String(weighing.source || '初次登记');
+      weighing.weightKg = Number(weighing.weightKg);
+    });
+    if (!waybill.currentWeighingId || !waybill.weighings.some((item) => item.id === waybill.currentWeighingId)) {
+      waybill.currentWeighingId = waybill.weighings.length ? waybill.weighings[0].id : null;
+    }
+    const current = waybill.weighings.find((item) => item.id === waybill.currentWeighingId);
+    // weightKg 始终等于当前在用称重的数值，计费和出账都按它走
+    waybill.weightKg = current ? current.weightKg : (Number(waybill.weightKg) || 0);
   });
   out.bills.forEach((bill) => {
     if (!Array.isArray(bill.waybillIds)) bill.waybillIds = [];
